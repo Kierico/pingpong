@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<!-- Kiérico Souza. -->
+<html lang="pt-BR">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Ping Pong</title>
+	<style>
+		body{
+			margin: 0;
+			background-color: #000D6B;
+		}
+		#divPainel{
+			display: flex;
+			height: 50px;
+			align-items: center;
+		}
+		.itemPainel{
+			margin: 5px;
+		}
+		.itemPainel #txt{
+			color: #99DDCC;
+		}
+		#divJogo{
+			width: 960px;
+			height: 500px;
+			border: 1px solid #99DDCC;
+			background-color: #9C19E0;
+		}
+		#divBola{
+			position: absolute;
+			top: 240px;
+			left: 475px;
+			width: 30px;
+			height: 30px;
+			background-color: #99DDCC;
+			border-radius: 50%;
+		}
+		.barra{
+			position: absolute;
+			width: 20px;
+			height: 140px;
+			background-color: #FF5DA2;
+			top: 180px;
+		}
+		.esquerda{
+			left: 10px;
+		}
+		.direita{
+			left: 930px;
+		}
+	</style>
+
+	<script>
+		// Elementos:
+		var botaoIniciar;
+		var bola;
+		var cpu;
+		var jogador;
+		var painelTxtPontos;
+
+		// Controle de animação:
+		var game, frames;
+
+		// Posições dos elementos:
+		var posicaoBolaX, posicaoBolaY;
+		var posicaoJogadorX, posicaoJogadorY;
+		var posicaoCpuX, posicaoCpuY;
+
+		// Direção de acordo com o teclado:
+		var direcaoJogadorY;
+
+		// Posições iniciais:
+		var posicaoJogadorInicialX = 0;
+		var posicaoJogadorInicialY = 180;
+		var posicaoCpuInicialX = 930;
+		var posicaoCpuInicialY = 180;
+		var posicaoBolaInicialX = 475;
+		var posicaoBolaInicialY = 240;
+
+		// Tamanhos:
+		var campoX = 0, campoY = 0, campoW = 960, campoH = 500;
+		var barraW = 20, barraH = 140, bolaW = 20, bolaH = 20;
+
+		// Direção:
+		var bolaX, bolaY;
+		var jogadorY = 0;
+		var cpuY = 0;
+
+		// Velocidade:
+		var velocidadeBola, velocidadeCpu, velocidadeJogador;
+
+		// Controle:
+		var pontos = 0;
+		var tecla;
+		var jogo = false;    // false ==  parado.
+
+		function controlaJogador() {
+			if (jogo) {
+				posicaoJogadorY += velocidadeJogador * direcaoJogadorY;
+				if (((posicaoJogadorY + barraH) >= campoH) || (posicaoJogadorY <= 0)) {
+					posicaoJogadorY += (velocidadeJogador * direcaoJogadorY) * -1;
+				}
+				jogador.style.top = `${posicaoJogadorY}px`;
+			}
+		};
+
+		function controlaCpu() {
+			if (jogo) {
+				if ((posicaoBolaX > (campoW / 2)) && (bolaX > 0)) {
+					// move a CPU:
+					if (((posicaoBolaY + (bolaH / 2)) > ((posicaoCpuY + (barraH / 2))) + velocidadeCpu)) {
+						// Mover para baixo.
+						if ((posicaoCpuY + barraH) <= campoH) {
+							posicaoCpuY += velocidadeCpu;
+						}
+					}else if ((posicaoBolaY + (bolaH /2)) < (posicaoCpuY + (barraH / 2)) - velocidadeCpu) {
+						// Mover para cima.
+						if (posicaoCpuY >= 0) {
+							posicaoCpuY -= velocidadeCpu;
+						}
+					}
+				}else{
+					// posicionar CPU no centro:
+					if ((posicaoCpuY + (barraH / 2)) < (campoH / 2)) {
+						posicaoCpuY += velocidadeCpu;
+					}else if ((posicaoCpuY + (barraH / 2)) > (campoH / 2)) {
+						posicaoCpuY -= velocidadeCpu;
+					}
+				}
+				cpu.style.top = `${posicaoCpuY}px`;
+			}
+		};
+
+		function controlaBola() {
+			// Movimentação da bola:
+			posicaoBolaX += velocidadeBola * bolaX;
+			posicaoBolaY += velocidadeBola * bolaY;
+
+			// Colisão com Jogador:
+			if ((posicaoBolaX <= posicaoJogadorX + barraW) && ((posicaoBolaY + bolaH >= posicaoJogadorY) && (posicaoBolaY <= posicaoJogadorY + barraH))) {
+				bolaY = (((posicaoBolaY + (bolaH / 2)) - (posicaoJogadorY + (barraH / 2))) / 16);
+				bolaX *= -1;    // Inverte valor.
+			}
+
+			// Colisão com CPU:
+			if ((posicaoBolaX >= posicaoCpuX - barraW) && ((posicaoBolaY + bolaH >= posicaoCpuY) && (posicaoBolaY <= posicaoCpuY + barraH))) {
+				bolaY = (((posicaoBolaY + (bolaH / 2)) - (posicaoCpuY + (barraH / 2))) / 16);
+				bolaX *= -1;    // Inverte valor.
+			}
+
+			// Limites superior e inferior (não sair pra cima nem pra baixo).
+			if ((posicaoBolaY >= 480) || (posicaoBolaY <= 0)) {
+				bolaY *= -1;
+			}
+
+			// Sair pelos lados dos jogadores:
+			if (posicaoBolaX >= (campoW - bolaW)) {
+				velocidadeBola = 0;
+				posicaoBolaX = posicaoBolaInicialX;
+				posicaoBolaY = posicaoBolaInicialY;
+				posicaoJogadorY = posicaoJogadorInicialY;
+				posicaoCpuY = posicaoCpuInicialY;
+				pontos++;    // ponto para o jogador.
+				painelTxtPontos.value = pontos;
+				jogo = false;
+				jogador.style.top = `${posicaoJogadorY}px`;
+				cpu.style.top = `${posicaoCpuY}px`;
+			}else if (posicaoBolaX <= 0) {
+				velocidadeBola = 0;
+				posicaoBolaX = posicaoBolaInicialX;
+				posicaoBolaY = posicaoBolaInicialY;
+				posicaoJogadorY = posicaoJogadorInicialY;
+				posicaoCpuY = posicaoCpuInicialY;
+				pontos--;    // ponto para a CPU.
+				painelTxtPontos.value = pontos;
+				jogo = false;
+				jogador.style.top = `${posicaoJogadorY}px`;
+				cpu.style.top = `${posicaoCpuY}px`;
+			}
+
+			bola.style.top = `${posicaoBolaY}px`;
+			bola.style.left = `${posicaoBolaX}px`;
+		};
+
+		function teclaDown() {
+			tecla = event.keyCode;
+			if (tecla == 38) {    // cima.
+				direcaoJogadorY = -1;
+			}else if (tecla == 40) {    // baixo.
+				direcaoJogadorY = 1;
+			}
+		};
+
+		function teclaUp() {
+			tecla = event.keyCode;
+			if (tecla == 38) {    // cima.
+				direcaoJogadorY = 0;
+			}else if (tecla == 40) {    // baixo.
+				direcaoJogadorY = 0;
+			}
+		};
+
+		// função de animação:
+		function game() {
+			if (jogo) {
+				controlaJogador();
+				controlaBola();
+				controlaCpu();
+			}
+			frames = requestAnimationFrame(game);
+		};
+
+		function iniciaJogo() {
+			if (!jogo) {
+				velocidadeBola = velocidadeCpu = velocidadeJogador = 8;
+				cancelAnimationFrame(frames);
+				jogo = true;
+				direcaoJogadorY = 0;
+				bolaY = 0;
+				if ((Math.random() * 10) < 5) {
+					bolaX = -1;
+				}else{
+					bolaX = 1;
+				}
+				posicaoBolaX = posicaoBolaInicialX;
+				posicaoBolaY = posicaoBolaInicialY;
+				posicaoJogadorX = posicaoJogadorInicialX;
+				posicaoJogadorY = posicaoJogadorInicialY;
+				posicaoCpuX = posicaoCpuInicialX;
+				posicaoCpuY = posicaoCpuInicialY;
+				game();
+			}
+		};
+
+		function inicializa() {
+			velocidadeBola = velocidadeCpu = velocidadeJogador = 8;
+			botaoIniciar = document.getElementById("botaoIniciar");
+			botaoIniciar.addEventListener("click", iniciaJogo);
+			jogador = document.getElementById("divJogador");
+			cpu = document.getElementById("divCpu");
+			bola = document.getElementById("divBola");
+			painelTxtPontos = document.getElementById("txtPontos");
+			document.addEventListener("keydown", teclaDown);
+			document.addEventListener("keyup", teclaUp);
+		};
+
+		window.addEventListener("load",inicializa);
+
+	</script>
+<!-- Kiérico Souza. -->
+</head>
+<body>
+	<div id="divJogo">
+		<div id="divBola"></div>
+		<div id="divJogador" class="barra esquerda"></div>
+		<div id="divCpu" class="barra direita"></div>
+	</div>
+	<div id="divPainel">
+		<div class="itemPainel">
+			<label id="txt">Pontos</label>
+			<input type="text" id="txtPontos" value="0" size="2">
+		</div>
+		<div class="itemPainel">
+			<button id="botaoIniciar">Iniciar</button>
+		</div>
+	</div>
+
+</body>
+</html>
+
+
+
+<!-- Kiérco Souza. -->
